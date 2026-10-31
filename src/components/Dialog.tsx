@@ -26,6 +26,23 @@ export function Dialog({ open, onRequestClose, className, labelledBy, role, chil
     if (!open && dialog.open) dialog.close();
   }, [open]);
 
+  const openRef = useRef(open);
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
+
+  // cancel が止められないブラウザ（Chrome 120以降）では Esc で勝手に閉じる。
+  // 呼んだ側がまだ開いているつもりなら開き直す（閉じるかは呼んだ側が決める）
+  useEffect(() => {
+    const dialog = ref.current;
+    if (!dialog) return;
+    const onClose = () => {
+      if (openRef.current && !dialog.open) dialog.showModal();
+    };
+    dialog.addEventListener("close", onClose);
+    return () => dialog.removeEventListener("close", onClose);
+  }, []);
+
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
