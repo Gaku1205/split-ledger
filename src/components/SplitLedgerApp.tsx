@@ -5,6 +5,7 @@ import { computeBalances } from "@/lib/balances";
 import { removeExpense, removedMessage, replaceExpense, restoreExpense, type RemovedExpense } from "@/lib/expenses";
 import { summaryText } from "@/lib/format";
 import { newId, saveLedger, useIsDesktop, useLedger } from "@/lib/ledgerStore";
+import { isMemberInExpenses, removeMember, renameMember } from "@/lib/members";
 import { settle } from "@/lib/settle";
 import { MAX_MEMBERS, type Ledger } from "@/lib/types";
 import { BalancePanel } from "./BalancePanel";
@@ -114,6 +115,42 @@ export function SplitLedgerApp() {
     },
     [ledger],
   );
+
+  const renameGroup = useCallback(
+    (name: string): boolean => {
+      if (!ledger) return false;
+      return saveLedger({ ...ledger, groupName: name });
+    },
+    [ledger],
+  );
+
+  const renameMemberById = useCallback(
+    (id: string, name: string): boolean => {
+      if (!ledger) return false;
+      const next = renameMember(ledger.members, id, name);
+      if (next === null) return true;
+      return saveLedger({ ...ledger, members: next });
+    },
+    [ledger],
+  );
+
+  const removeMemberById = useCallback(
+    (id: string): boolean => {
+      if (!ledger) return false;
+      // 記録に出てくるメンバーは消さない（画面でも止めているが、ここでも守る）
+      if (isMemberInExpenses(ledger.expenses, id)) return false;
+      const next = removeMember(ledger.members, id);
+      if (next === null) return true;
+      return saveLedger({ ...ledger, members: next });
+    },
+    [ledger],
+  );
+
+  // ページタイトル：読み込み後はグループ名、読み込み前は metadata の split-ledger のまま
+  const groupName = ledger?.groupName ?? null;
+  useEffect(() => {
+    if (groupName !== null) document.title = groupName;
+  }, [groupName]);
 
   // --- 記録のシート ---
   /** 新しく記録するときは fresh（直していた記録を外す）。直すときは false */
@@ -235,10 +272,17 @@ export function SplitLedgerApp() {
     (removed: RemovedExpense) => {
       const current = ledgerRef.current;
       if (!current) return;
+      // 取り消し待ちの間にメンバーが削除されていたら、いないメンバーを指す記録は戻さない
+      const exp = removed.expense;
+      const ids = new Set(current.members.map((m) => m.id));
+      if (![exp.paidBy, ...exp.sharedBy].every((id) => ids.has(id))) {
+        showToast("メンバーを削除したため、この記録は元に戻せません");
+        return;
+      }
       const next: Ledger = { ...current, expenses: restoreExpense(current.expenses, removed) };
       if (commit(next, removed.expense.id)) setToast(null);
     },
-    [commit],
+    [commit, showToast],
   );
 
   const deleteEditing = useCallback((): boolean => {
@@ -394,7 +438,17 @@ export function SplitLedgerApp() {
           onClose={closeSheet}
         />
       )}
-      <MenuSheet open={menuOpen} members={members} onClose={closeMenu} onAddMember={addMember} />
+      <MenuSheet
+        open={menuOpen}
+        groupName={ledger?.groupName ?? ""}
+        members={members}
+        expenses={expenses}
+        onClose={closeMenu}
+        onAddMember={addMember}
+        onRenameGroup={renameGroup}
+        onRenameMember={renameMemberById}
+        onRemoveMember={removeMemberById}
+      />
       <ConfirmDiscard
         open={isDesktop && confirming}
         onKeep={() => {

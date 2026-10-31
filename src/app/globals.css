@@ -1058,6 +1058,53 @@ dialog::backdrop {
   gap: 6px;
 }
 
+.member-item {
+  padding: 0;
+}
+
+.member-row .member-name {
+  flex: 1 1 auto;
+}
+
+.member-action {
+  flex: none;
+  margin-left: 6px;
+  min-width: 44px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.member-note {
+  margin: 0 0 8px;
+}
+
+.member-remove-failed {
+  margin-top: 12px;
+}
+
+.member-edit {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 8px 0;
+}
+
+.member-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.member-edit-row .input {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.member-edit-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .member-name {
   min-width: 0;
   overflow: hidden;
