@@ -272,10 +272,17 @@ export function SplitLedgerApp() {
     (removed: RemovedExpense) => {
       const current = ledgerRef.current;
       if (!current) return;
+      // 取り消し待ちの間にメンバーが削除されていたら、いないメンバーを指す記録は戻さない
+      const exp = removed.expense;
+      const ids = new Set(current.members.map((m) => m.id));
+      if (![exp.paidBy, ...exp.sharedBy].every((id) => ids.has(id))) {
+        showToast("メンバーを削除したため、この記録は元に戻せません");
+        return;
+      }
       const next: Ledger = { ...current, expenses: restoreExpense(current.expenses, removed) };
       if (commit(next, removed.expense.id)) setToast(null);
     },
-    [commit],
+    [commit, showToast],
   );
 
   const deleteEditing = useCallback((): boolean => {
