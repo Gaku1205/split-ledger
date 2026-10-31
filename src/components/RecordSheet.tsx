@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useId, useRef, useState } from "react";
 import type { Expense, Member } from "@/lib/types";
 import { Dialog } from "./Dialog";
 import { ExpenseForm, type ExpenseDraft } from "./ExpenseForm";
@@ -82,25 +82,49 @@ export function RecordSheet({ phase, members, formKey, expense, onDelete, onSave
   );
 }
 
-export function ConfirmDiscard({ open, onKeep, onDiscard }: { open: boolean; onKeep: () => void; onDiscard: () => void }) {
+type ConfirmProps = {
+  open: boolean;
+  title: string;
+  /** 元に戻るほうのボタン（開いたらここにフォーカス。Esc も同じ） */
+  keepLabel: string;
+  confirmLabel: string;
+  onKeep: () => void;
+  onConfirm: () => void;
+};
+
+/** 確かめるダイアログ */
+export function ConfirmDialog({ open, title, keepLabel, confirmLabel, onKeep, onConfirm }: ConfirmProps) {
+  const titleId = useId();
   return (
-    <Dialog open={open} onRequestClose={onKeep} className="confirm" labelledBy="confirm-title" role="alertdialog">
+    <Dialog open={open} onRequestClose={onKeep} className="confirm" labelledBy={titleId} role="alertdialog">
       {open && (
         <div className="confirm-body">
-          <p id="confirm-title" className="confirm-title">
-            入れた内容を捨てますか？
+          <p id={titleId} className="confirm-title">
+            {title}
           </p>
           <div className="confirm-actions">
-            {/* 開いたら「入力に戻る」にフォーカス */}
             <button type="button" className="button-secondary" autoFocus onClick={onKeep}>
-              入力に戻る
+              {keepLabel}
             </button>
-            <button type="button" className="button-secondary" onClick={onDiscard}>
-              捨てる
+            <button type="button" className="button-secondary" onClick={onConfirm}>
+              {confirmLabel}
             </button>
           </div>
         </div>
       )}
     </Dialog>
+  );
+}
+
+export function ConfirmDiscard({ open, onKeep, onDiscard }: { open: boolean; onKeep: () => void; onDiscard: () => void }) {
+  return (
+    <ConfirmDialog
+      open={open}
+      title="入れた内容を捨てますか？"
+      keepLabel="入力に戻る"
+      confirmLabel="捨てる"
+      onKeep={onKeep}
+      onConfirm={onDiscard}
+    />
   );
 }
