@@ -3,7 +3,7 @@
 import { useEffect, useId, useRef, useState, type FormEvent, type ReactNode } from "react";
 import { parseAmount } from "@/lib/amount";
 import { perPersonText, toIsoDate } from "@/lib/format";
-import type { Member } from "@/lib/types";
+import type { Expense, Member } from "@/lib/types";
 import { AlertIcon, CheckIcon } from "./Icons";
 import { PersonMark } from "./PersonMark";
 
@@ -24,6 +24,10 @@ type Props = {
   focusOnMount: boolean;
   /** シートのときは見出しと「閉じる」を出す */
   header?: ReactNode;
+  /** 直す記録（あれば入力済みで開き、「変更を保存」と「この記録を消す」を出す） */
+  expense?: Expense;
+  /** 「この記録を消す」を押した。消せなければ false */
+  onDelete?: () => boolean;
 };
 
 type Errors = { amount?: string; paidBy?: string; sharedBy?: string };
@@ -31,17 +35,21 @@ type Errors = { amount?: string; paidBy?: string; sharedBy?: string };
 const PAID_BY_ERROR = "払った人を選んでください。";
 const SHARED_BY_ERROR = "誰の分かを1人以上選んでください。";
 
-export function ExpenseForm({ members, onSave, onDirtyChange, focusOnMount, header }: Props) {
+export function ExpenseForm({ members, onSave, onDirtyChange, focusOnMount, header, expense, onDelete }: Props) {
   const uid = useId();
   const [initialDate] = useState(() => toIsoDate(new Date()));
-  const [amount, setAmount] = useState("");
-  const [memo, setMemo] = useState("");
-  const [paidBy, setPaidBy] = useState<string | null>(null);
+  const [initialAmount] = useState(() => (expense ? String(expense.amount) : ""));
+  const [initialShared] = useState<string[] | "all">(() => (expense ? expense.sharedBy : "all"));
+  const baseDate = expense ? expense.date : initialDate;
+  const [amount, setAmount] = useState(initialAmount);
+  const [memo, setMemo] = useState(expense?.memo ?? "");
+  const [paidBy, setPaidBy] = useState<string | null>(expense?.paidBy ?? null);
   /** "all" は「全員」（あとで足したメンバーも含む） */
-  const [shared, setShared] = useState<string[] | "all">("all");
-  const [date, setDate] = useState(initialDate);
+  const [shared, setShared] = useState<string[] | "all">(initialShared);
+  const [date, setDate] = useState(baseDate);
   const [errors, setErrors] = useState<Errors>({});
   const [saveFailed, setSaveFailed] = useState(false);
+  const [deleteFailed, setDeleteFailed] = useState(false);
 
   const amountRef = useRef<HTMLInputElement>(null);
   const paidRef = useRef<HTMLInputElement>(null);
@@ -49,7 +57,17 @@ export function ExpenseForm({ members, onSave, onDirtyChange, focusOnMount, head
 
   const sharedIds = shared === "all" ? members.map((m) => m.id) : members.filter((m) => shared.includes(m.id)).map((m) => m.id);
   const allShared = sharedIds.length === members.length && members.length > 0;
-  const dirty = amount !== "" || memo !== "" || paidBy !== null || !allShared || date !== initialDate;
+  const baseSharedIds =
+    initialShared === "all"
+      ? members.map((m) => m.id)
+      : members.filter((m) => initialShared.includes(m.id)).map((m) => m.id);
+  const sameShared = sharedIds.length === baseSharedIds.length && sharedIds.every((id) => baseSharedIds.includes(id));
+  const dirty =
+    amount !== initialAmount ||
+    memo !== (expense?.memo ?? "") ||
+    paidBy !== (expense?.paidBy ?? null) ||
+    !sameShared ||
+    date !== baseDate;
 
   useEffect(() => {
     onDirtyChange(dirty);
@@ -262,13 +280,24 @@ export function ExpenseForm({ members, onSave, onDirtyChange, focusOnMount, head
 
       {saveFailed && (
         <p className="notice-error" role="alert">
-          記録を保存できませんでした。入れた内容はそのままです。もう一度「記録する」を押してください。
+          記録を保存できませんでした。入れた内容はそのままです。もう一度「{expense ? "変更を保存" : "記録する"}」を押してください。
+        </p>
+      )}
+
+      {deleteFailed && (
+        <p className="notice-error" role="alert">
+          記録を消せませんでした。もう一度「この記録を消す」を押してください。
         </p>
       )}
 
       <button type="submit" className="button-primary button-block">
-        記録する
+        {expense ? "変更を保存" : "記録する"}
       </button>
+      {expense && onDelete && (
+        <button type="button" className="delete-button" onClick={() => setDeleteFailed(!onDelete())}>
+          この記録を消す
+        </button>
+      )}
     </form>
   );
 }

@@ -11,11 +11,13 @@ type Props = {
   expenses: readonly Expense[];
   /** 保存した直後の記録 */
   highlightId: string | null;
+  /** 行を押した（その記録を直すフォームを開く） */
+  onSelect: (id: string, button: HTMLButtonElement) => void;
 };
 
 const FIRST_COUNT = 5;
 
-export function ExpenseListPanel({ members, expenses, highlightId }: Props) {
+export function ExpenseListPanel({ members, expenses, highlightId, onSelect }: Props) {
   const [showAll, setShowAll] = useState(false);
   const sorted = sortNewestFirst(expenses);
   const visible = showAll ? sorted : sorted.slice(0, FIRST_COUNT);
@@ -45,23 +47,22 @@ export function ExpenseListPanel({ members, expenses, highlightId }: Props) {
         ) : (
           <ul className="rows">
             {visible.map((e) => (
-              <li
-                key={e.id}
-                className={[
-                  "expense-row",
-                  many ? "expense-row-many" : "",
-                  e.id === highlightId ? "flash" : "",
-                ].join(" ")}
-              >
-                <span className="expense-line">
-                  {e.memo === "" ? (
-                    <span className="expense-memo muted-dash">—</span>
-                  ) : (
-                    <span className="expense-memo">{e.memo}</span>
-                  )}
-                  <Yen value={e.amount} className="money-16" />
-                </span>
-                <span className="expense-detail">{expenseDetail(e, members, now)}</span>
+              <li key={e.id} className={many ? "expense-item expense-row-many" : "expense-item"}>
+                <button
+                  type="button"
+                  className={e.id === highlightId ? "expense-row flash" : "expense-row"}
+                  onClick={(ev) => onSelect(e.id, ev.currentTarget)}
+                >
+                  <span className="expense-line">
+                    {e.memo === "" ? (
+                      <span className="expense-memo muted-dash">—</span>
+                    ) : (
+                      <span className="expense-memo">{e.memo}</span>
+                    )}
+                    <Yen value={e.amount} className="money-16" />
+                  </span>
+                  <span className="expense-detail">{expenseDetail(e, members, now)}</span>
+                </button>
               </li>
             ))}
           </ul>

@@ -443,11 +443,41 @@ button {
 /* ---------- 立て替えの記録（一覧） ---------- */
 
 .expense-row {
+  width: 100%;
   height: 64px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   padding: 0 16px;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  transition: background-color 80ms ease-out;
+}
+
+button.expense-row:active {
+  background: var(--raised);
+}
+
+button.expense-row:focus-visible {
+  outline-offset: -2px;
+}
+
+/* 「この記録を消す」（フォームの一番下。ほかのボタンから 24px 離す） */
+.delete-button {
+  align-self: flex-start;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--negative);
+  font-size: 14px;
+  line-height: 22px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
 }
 
 .expense-row-many {
@@ -1097,6 +1127,27 @@ dialog::backdrop {
     transform 160ms ease-out;
 }
 
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.toast-action {
+  flex: none;
+  min-height: 44px;
+  margin: -11px -8px -11px 0;
+  padding: 0 8px;
+  border: 0;
+  background: transparent;
+  color: #ffffff;
+  font-size: 14px;
+  line-height: 22px;
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 3px;
+}
+
 .toast.is-leaving {
   opacity: 0;
   transform: translateY(8px);
@@ -1136,8 +1187,13 @@ dialog::backdrop {
   .button-secondary:hover:not(:disabled) {
     background: var(--raised-hover);
   }
-  .text-button:hover {
+  .text-button:hover,
+  .delete-button:hover,
+  .toast-action:hover {
     text-decoration-thickness: 2px;
+  }
+  button.expense-row:hover {
+    background: var(--raised);
   }
   .input:hover:not(:disabled) {
     border-color: var(--text);

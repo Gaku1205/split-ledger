@@ -2,27 +2,52 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-export type ToastMessage = { id: number; text: string };
+export type ToastMessage = {
+  id: number;
+  text: string;
+  /** 出しておく時間（ミリ秒）。無ければ3秒 */
+  duration?: number;
+  /** 知らせに付けるボタン（「元に戻す」） */
+  action?: { label: string; onClick: () => void };
+};
 
 type Props = {
   message: ToastMessage | null;
   onDone: () => void;
-  /** 出しておく時間（ミリ秒） */
-  duration?: number;
 };
+
+const DEFAULT_DURATION_MS = 3000;
 
 const LEAVE_MS = 160;
 
 /** 知らせ（「記録しました」）。乗せている間とフォーカスがある間は消さない */
-export function Toast({ message, onDone, duration = 3000 }: Props) {
+export function Toast({ message, onDone }: Props) {
   return (
     <div className="toast-region" aria-live="polite">
-      {message && <ToastItem key={message.id} text={message.text} onDone={onDone} duration={duration} />}
+      {message && (
+        <ToastItem
+          key={message.id}
+          text={message.text}
+          action={message.action}
+          onDone={onDone}
+          duration={message.duration ?? DEFAULT_DURATION_MS}
+        />
+      )}
     </div>
   );
 }
 
-function ToastItem({ text, onDone, duration }: { text: string; onDone: () => void; duration: number }) {
+function ToastItem({
+  text,
+  action,
+  onDone,
+  duration,
+}: {
+  text: string;
+  action: ToastMessage["action"];
+  onDone: () => void;
+  duration: number;
+}) {
   const [leaving, setLeaving] = useState(false);
   const timer = useRef<number | null>(null);
 
@@ -57,7 +82,12 @@ function ToastItem({ text, onDone, duration }: { text: string; onDone: () => voi
       onFocus={hold}
       onBlur={start}
     >
-      {text}
+      <span>{text}</span>
+      {action && (
+        <button type="button" className="toast-action" onClick={action.onClick}>
+          {action.label}
+        </button>
+      )}
     </div>
   );
 }
