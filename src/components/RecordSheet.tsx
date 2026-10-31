@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useRef, useState } from "react";
-import type { Member } from "@/lib/types";
+import type { Expense, Member } from "@/lib/types";
 import { Dialog } from "./Dialog";
 import { ExpenseForm, type ExpenseDraft } from "./ExpenseForm";
 
@@ -12,13 +12,16 @@ type Props = {
   members: readonly Member[];
   /** 何度目のフォームか（変えると中身を最初に戻す） */
   formKey: number;
+  /** 直す記録（null なら新しく記録する） */
+  expense: Expense | null;
+  onDelete: () => boolean;
   onSave: (draft: ExpenseDraft) => boolean;
   /** 閉じる（捨てるかの確認は済んでいる） */
   onClose: (discard: boolean) => void;
 };
 
 /** スマホ・タブレットの「立て替えを記録」の下からのシート */
-export function RecordSheet({ phase, members, formKey, onSave, onClose }: Props) {
+export function RecordSheet({ phase, members, formKey, expense, onDelete, onSave, onClose }: Props) {
   const dirtyRef = useRef(false);
   const [confirming, setConfirming] = useState(false);
 
@@ -45,7 +48,9 @@ export function RecordSheet({ phase, members, formKey, onSave, onClose }: Props)
         {phase !== "closed" && (
           <div className="sheet-body">
             <ExpenseForm
-              key={formKey}
+              key={`${formKey}-${expense?.id ?? "new"}`}
+              expense={expense ?? undefined}
+              onDelete={onDelete}
               members={members}
               onSave={onSave}
               onDirtyChange={onDirtyChange}
@@ -53,7 +58,7 @@ export function RecordSheet({ phase, members, formKey, onSave, onClose }: Props)
               header={
                 <div className="sheet-header">
                   <h2 id="record-sheet-title" className="sheet-title">
-                    立て替えを記録
+                    {expense ? "記録を直す" : "立て替えを記録"}
                   </h2>
                   <button type="button" className="button-secondary" onClick={requestClose}>
                     閉じる
@@ -77,7 +82,7 @@ export function RecordSheet({ phase, members, formKey, onSave, onClose }: Props)
   );
 }
 
-function ConfirmDiscard({ open, onKeep, onDiscard }: { open: boolean; onKeep: () => void; onDiscard: () => void }) {
+export function ConfirmDiscard({ open, onKeep, onDiscard }: { open: boolean; onKeep: () => void; onDiscard: () => void }) {
   return (
     <Dialog open={open} onRequestClose={onKeep} className="confirm" labelledBy="confirm-title" role="alertdialog">
       {open && (
